@@ -37,11 +37,14 @@ void openSocket(int port);
 void recieveConnection();
 void sendMessage();
 void producer();
-void consumer();
-void cleanTrhead();
+void clientHandle(int client_sock,int token);
+void guess();
+bool active(int token);
+void eraseVector(int number);
 
 //deklarasi global variable
-queue<int> cid;
+vector<int> cid;
+vector<int> vtoken;
 int token = 0;
 bool all,producing;
 int sock, client_sock;
@@ -50,7 +53,7 @@ socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 int len, n;
 mutex lock;
-vector<thread> line
+vector<thread> pool;
 
 int main(){
 	
@@ -87,34 +90,23 @@ int main(){
 
 	thread p(producer);
 
-	thread c(recieveConnection);
-
+	pool.push_back(thread(recieveConnection));
+	pool.back().join();
 	p.join();
-	c.join();
 
-	int terminate;
-
-	scanf ("%d",&terminate);
-
-	if (terminate == 0){
-		all = false;
-	}
-	p.join();
-	c.join();
+	//close(sock);
 	close(sock);
 	return 0;
 }
 
 void producer(){
 	while(all){
-
 		lock.lock(); // ambil lock
-		printf ("Current token = %d\n",token);
 		// Jika token masih kurang dari 5
-		if (cid.size() < 5)
+		if (vtoken.size() < 5)
 		{
 			producing = true;
-			cid.push(token);
+			vtoken.push_back(token);
 			token++;
 		}
 		else{
@@ -130,46 +122,63 @@ void producer(){
 
 void recieveConnection(){
 	while(all){
-		if ((!producing) && (token > 0)){
-			lock.lock();
-			cid.pop();
+		if ((!producing) && (vtoken.size() > 0)){
 			// terima koneksi dari klien
 			clilen = sizeof(cli_addr);
 			client_sock = accept(sock, (struct sockaddr *) &cli_addr, &clilen);
-			
-			// kosongkan buffer
-			bzero(buffer, 10);
-			
-			// baca dari klien
-			len = read(client_sock, buffer, 10);
-			
-			if (len >= 0){ // jika pembacaan berhasil
-				n = atoi(buffer); // convert ke integer
-				printf("Recv : %s\n",buffer);
-				
-				if (strcmp("nopassword",buffer) == 0){
-					write(client_sock,"1",10); // tulis ke klien
-				}
-				else
-				{
-					write(client_sock,"0",10);
-				}
-			}
-			lock.unlock();
-			// tutup koneksi klien
-			close(client_sock);
+			printf ("Client %d Connected!\n",client_sock);
+			cid.push_back(vtoken.front());
+			pool.push_back(thread(clientHandle,client_sock,vtoken.front()));
+			vtoken.erase(vtoken.begin());
 		}
 		usleep (50 * 1000);
 	}
 }
 
-void cleanTrhead(){
-	while (all){
-		if (line.size() > 100){
-			lock.lock();
-			line.clear();
-			lock.unlock();
+void clientHandle(int client_sock,int token){
+	bool act=active(token);
+	while (act){
+		bzero(buffer,10);
+		len = read(client_sock,buffer,1000);
+		if(len >= 0){
+			printf("Message client %d = %s",client_sock,buffer);
+			if (strcmp(buffer,"close") == 0){
+				eraseVector(token);
+			}
+			else if (strcmp(buffer,"") == 0){
+				printf ("SERVER DETECT : CLIENT %d DIED",client_sock);
+				eraseVector(token);
+			}
+			printf("\n");
 		}
-		usleep(30 * 1000 * 1000);
+		act = active(token);
+		usleep(50 * 1000);
+	}
+	close(client_sock);
+}
+
+bool active(int token){
+	bool temp = false;
+	int i = 0;
+	while (i < cid.size()){
+		temp = temp || (cid[i] == token);
+		i++;
+	}
+	return temp;
+}
+
+void eraseVector(int number){
+	bool found = false;
+	int i = 0;
+	while (!found && (i < cid.size())){
+		if (cid[i] == number){
+			found = true;
+		}
+		else{
+			i++;
+		}
+	}
+	if (i != cid.size()){
+		cid.erase(cid.begin()+i);
 	}
 }

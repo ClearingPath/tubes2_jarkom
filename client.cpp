@@ -17,7 +17,7 @@
 #define port 25000
 
 using namespace std;
-int sock, len; char buffer[10];
+int sock, len; char buffer[1000];
 void login();
 
 int main(int argc, char** argv){
@@ -61,16 +61,17 @@ int main(int argc, char** argv){
 }
 
 void login(){
-	string user;
-	cout << endl << "Masukan id :" << endl;
+	bzero(buffer,1000);
+	string temp ("LIN||");
+	string user,pass;
+	cout << endl << "Masukan id :";
 	cin >> user;
-	
-	strcpy (buffer, user.c_str());
-	len = write(sock,buffer,16);
-	if (len >= 0){
-		len = read(sock,buffer,16);
-		if (len >= 0){
-			printf("%s\n",buffer);
-		}
-	}
+	cout << "Masukan password :";
+	cin >> pass;
+	temp += user;
+	temp += "||";
+	temp += pass;
+	temp += ";";
+	strcpy(buffer,temp.c_str());
+	len = write(sock,buffer,1000);
 }

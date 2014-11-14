@@ -12,6 +12,13 @@
 #include <cstdlib>
 #include <errno.h>
 #include <cstring>
+#include <string>
+#include <iostream>
+#define port 25000
+
+using namespace std;
+int sock, len; char buffer[10];
+void login();
 
 int main(int argc, char** argv){
 	// penggunaan: ./client <server ip> <nilai n>
@@ -19,10 +26,8 @@ int main(int argc, char** argv){
 		printf("Pemakaian: ./client <server ip> <nilai n>\n");
 	}
 	
-	int sock, port, len; char buffer[10];
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
-	port = 9000;
 	
 	// buka socket TCP (SOCK_STREAM) dengan alamat IPv4 dan protocol IP
 	if((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0){
@@ -49,17 +54,23 @@ int main(int argc, char** argv){
 	// copy n ke buffer
 	bcopy(argv[2], buffer, 10);
 	
-	// tulis ke server
-	len = write(sock,buffer,10);
-	
-	if (len >= 0){
-		// baca balasan server
-		len = read(sock,buffer,10);
-		if (len >= 0){
-			printf("%s\n", buffer);
-		}
-	}
+	login();
 	
 	close(sock);
 	return 0;
+}
+
+void login(){
+	string user;
+	cout << endl << "Masukan id :" << endl;
+	cin >> user;
+	
+	strcpy (buffer, user.c_str());
+	len = write(sock,buffer,16);
+	if (len >= 0){
+		len = read(sock,buffer,16);
+		if (len >= 0){
+			printf("%s\n",buffer);
+		}
+	}
 }

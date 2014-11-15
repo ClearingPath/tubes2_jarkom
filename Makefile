@@ -1,6 +1,6 @@
 all:
 	g++ -std=c++11 -o server server.cpp -pthread -Wl,--no-as-needed
-	g++ -o client client.cpp
+	g++ -std=c++11 -o client client.cpp -pthread -Wl,--no-as-needed
 	
 runserver:
 	./server

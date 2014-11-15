@@ -1,0 +1,24 @@
+[PROTOKOL LINKER MESSEGER]
+> Login
+LIN||<username>||<password>||
+> Logout
+LOU||<username>||
+> Register
+REG||<username>||<password>||
+> Message
+MSG||<target>||<clientTime>||<Message>||
+> Create Group
+CGR||<GroupName>||
+> Join Group
+JGR||<GroupName>||
+> Leave Group
+LGR||<GroupName>||
+> Server Reply
+SVR||<code>||<message>||
+
+List of Server Reply:
+*SVR||000|| 	: protokol error
+*SVR||001|| 	: login error
+*SVR||002||	: registering error
+*SVR||003||	: join group error
+*SVR||200||	: OK

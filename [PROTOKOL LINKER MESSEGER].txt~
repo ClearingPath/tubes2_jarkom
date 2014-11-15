@@ -1,0 +1,17 @@
+[PROTOKOL LINKER MESSEGER]
+> Login
+LIN||<username>||<password>||
+> Logout
+LOU||<username>||
+> Register
+REG||<username>||<password>||
+> Message
+MSG||<target>||<clientTime>||<Message>||
+> Create Group
+CGR||<GroupName>||
+> Join Group
+JGR||<GroupName>||
+> Leave Group
+LGR||<GroupName>||
+> Server Reply
+SVR||<code>||

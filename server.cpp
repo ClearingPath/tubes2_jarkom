@@ -1,36 +1,4 @@
-/**
-	server: menerima bilangan n dari klien, mengembalikan n + 1 ke klien
-	disarankan untuk membungkus address dan socket ke kelas tersendiri
-*/
-
-#include <sys/types.h>   // tipe data penting untuk sys/socket.h dan netinet/in.h
-#include <netinet/in.h>  // fungsi dan struct internet address
-#include <sys/socket.h>  // fungsi dan struct socket API
-#include <netdb.h>       // lookup domain/DNS hostname
-#include <errno.h>
-#include <cstring>
-// thread & mutex
-#include <thread>
-#include <mutex>
-
-// queue & vector
-#include <queue>
-#include <vector>
-
-// untuk printf
-#include <cstdio>
-
-// untuk random, usleep, dan time
-#include <cstdlib>
-#include <unistd.h>
-#include <time.h>
-
-using std::queue;
-using std::thread;
-using std::mutex;
-using std::vector;
-
-#define PORT 25000
+#include "includes.hpp"
 
 //deklarasi fungsi dan prosedur
 void openSocket(int port);
@@ -48,7 +16,7 @@ vector<int> vtoken;
 int token = 0;
 bool all,producing;
 int sock, client_sock;
-char buffer[10];
+char buffer[1000];
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 int len, n;
@@ -138,7 +106,7 @@ void recieveConnection(){
 void clientHandle(int client_sock,int token){
 	bool act=active(token);
 	while (act){
-		bzero(buffer,10);
+		bzero(buffer,1000);
 		len = read(client_sock,buffer,1000);
 		if(len >= 0){
 			printf("Message client %d = %s",client_sock,buffer);
@@ -156,6 +124,7 @@ void clientHandle(int client_sock,int token){
 	}
 	close(client_sock);
 }
+
 
 bool active(int token){
 	bool temp = false;

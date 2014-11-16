@@ -1,6 +1,5 @@
 #include "loginreg.hpp"
 
-
 void start(){
 	string str; 
 	bool correct;
@@ -8,71 +7,122 @@ void start(){
 	cout << "*************************************" <<endl;
 	cout << "     Welcome to LINKER MESSENGER  " << endl;
 	cout << "*************************************" << endl;	
-	cout << "Type signup to register" << endl;
-	cout << "               or" << endl;
-	cout << "Type login if you already registered" << endl;
+	cout << "1. Type signup to register" << endl;
+	cout << "2. Type login if you already registered" << endl;
+	cout << "3. Type exit to exit the application" << endl;
 	cout << "------------------------------------" << endl;
 	while (!correct){
 		cout << endl << ">  ";
 		cin >> str;
-		if(str.compare("register")==0){
-			registering();
+		if(str.compare("signup")==0){
+			signup();
 			correct = true;
 			start();
-		}else{
-			if(str.compare("login")==0){
-				login();
-				correct = true;
-			}else{
-				cout << endl << endl << "Wrong input" <<endl;
-			}
+		}
+		else if(str.compare("login")==0){
+			login();
+			correct = true;
+		}
+		else if(str.compare("exit")==0){
+			correct=true;
+			exit();
+		}
+		else {
+			cout << "Wrong input!" <<endl<<endl;
 		}
 	}
 }
 
-void registering(){
+void signup(){
 	string username;
 	string pass;
+	string ret;
 	bool correct;
 	correct=false;
 	cout << "enter new username : ";
-	cin >> username;
+	getline(cin >> ws,username);
 	cout << "enter password     : "; 
-	cin >> pass;
+	getline(cin >> ws,pass);
 	while(!correct){
+
 		if(checkUserName(username)){
 			correct=true;
 		}else{
 			cout << "username has already been used" << endl<<endl;
 			cout << "enter new username : ";
-			cin >> username;
+			getline(cin >> ws,username);
 			cout << "enter password     : "; 
-			cin >> pass;
+			getline(cin >> ws,username);
 		}
 	}
+	ret.append("REG||");
+	ret.append(username);
+	ret.append("||");
+	ret.append(pass);
+	ret.append("||");
+	sendToPort(ret);
 	//masukkin ke file eksternal 
+	writeExt(username,pass);
+	cout << endl << "You've already registered!" << endl <<endl;
+}
+
+void writeExt(string un, string pass){
 	ofstream myfile;
 	myfile.open("user.txt", ios_base::app);
-	myfile << username;
-	myfile << "&&";
+	myfile << un;
+	myfile << "||";
 	myfile << pass;
 	myfile << endl;
 	myfile.close();
-	cout << endl << "You've already registered!" << endl;
 }
+
+
+vector< vector <string> > readExt(string path){
+	vector< vector <string> > userVector;
+	vector<string> namepasswordVector;
+	int found, nline;
+	string line;
+	string name,pass;
+	ifstream myfile(path.c_str());
+	if (myfile.is_open()){
+		while (getline(myfile,line)){
+			cout << line << endl;
+			found=line.find("||");
+			name=line.substr(0,found);
+			pass=line.substr(found+2);
+			cout << "nama : " << name << endl;
+			cout << "pass : " << pass << endl;
+			//masukkin ke vector
+			namepasswordVector.clear();
+			namepasswordVector.push_back(name);
+			namepasswordVector.push_back(pass);
+			userVector.push_back(namepasswordVector);
+
+		}		
+		myfile.close();
+	}
+	else cout << "unable to open file";
+	return userVector;
+}
+
 
 void login(){
 	string username;
 	string pass;
+	string ret;
 	bool correct;
 	correct=false;
 
 	while(!correct){
 		cout << "username  : ";
-		cin >> username;
+		getline(cin >> ws,username);
 		cout << "password  : ";	
-		cin >> pass;
+		getline(cin >> ws,pass);
 		if(checkPass(pass)){
+			ret.append("LOU||");
+			ret.append(username);
+			ret.append("||");
+			cout << "return : " << ret << endl;
 			cout << endl << "---------------WELCOME " <<  username << "!----------------" << endl;
 			mainChat(username);
 			correct=true;
@@ -82,6 +132,7 @@ void login(){
 
 void mainChat(string user){
 	string str;
+	string username = user;
 	int status;
 	status=1; //0 if logout
 
@@ -94,7 +145,8 @@ void mainChat(string user){
 		cout << "3. type join <group_name> to join a group" << endl;
 		cout << "4. type leave <group_name> to leave a group" << endl; 
 		cout << "5. type show <friend's_name or group_name> to show chat history" <<endl;
-		cout << "6. type logout to exit the application" << endl;
+		cout << "6. type logout to sign out from the application" << endl;
+		cout << "7. type exit to exit the application" << endl;
 		cout << "--------------------------------------------------" << endl;
 		cout << endl;
 		cout << user << "> ";
@@ -103,41 +155,40 @@ void mainChat(string user){
 		//logout
 		if(str.compare("logout")==0){
 			status=0;
-			logout();
-		}else{
+			logout(username);
+		}
 		//message
-			if (str.substr(0,8).compare("message ")==0){
-				sendMessageTo(str);
-			}else{
+		else if(str.substr(0,8).compare("message ")==0){
+			sendMessage(str);
+		}
 		//create group
-				if(str.substr(0,7).compare("create ")==0){
-					createGroup(str);
-				}else{
+		else if(str.substr(0,7).compare("create ")==0){
+			createGroup(str);
+		}
 		//join group
-					if(str.substr(0,5).compare("join ")==0){
-						joinGroup(str);
-					}else{
+		else if(str.substr(0,5).compare("join ")==0){
+			joinGroup(str);
+		}
 		//leave group
-						if(str.substr(0,6).compare("leave ")==0){
-							leaveGroup(str);
-						}else{
+		else if(str.substr(0,6).compare("leave ")==0){
+			leaveGroup(str);
+		}
 		//show chat history
-							if(str.substr(0,5).compare("show ")==0){
-								showChat(str);
-							}else{
+		else if(str.substr(0,5).compare("show ")==0){
+			showChat(str);
+		}
+		//exit
+		else if(str.compare("exit")==0){
+			status=0;
+			exit();
+		}
 		//empty input
-								if(str.compare("")==0){
-									//do nothing
-									cout << "kosongg" <<endl;
-								}else{
+		else if(str.compare("")==0){
+			//do nothing
+		}
 		//wrong input
-									cout << "Wrong input";									
-								}
-							}
-						}
-					}
-				}
-			}
+		else{
+			cout <<"Wrong input!" <<endl;
 		}
 	}
 }
@@ -156,28 +207,41 @@ bool checkPass(string p){
 		return true;
 }
 
-void logout(){
-	cout << "THANK YOU!" << endl;
+void logout(string username){
+	string ret;
+	ret.append("LOU||");
+	ret.append(username);
+	ret.append("||");
+	cout << "Logout success!" << endl;
+	sendToPort(ret);
+	start();
 } 	
 
-void sendMessageTo(string str){
-	string receiver;
+void sendMessage(string str){
+	string target;
 	string msg;
-	receiver=str.substr(8);	
-	cout << "kirim ke : " << receiver <<  endl; //nanti dihapus
+	string ret;
+	string clientTime;
+	time_t currentTime;
+	target=str.substr(8);	
+	cout << "kirim ke : " << target <<  endl; //nanti dihapus
 	cout << "Message : " << endl;
 	getline(cin,msg);
-	sendMessage(msg);
-}
-
-void sendMessage(string message){
-	cout << endl<< "message sent!" << endl;
-	cout << "pesan yang dikirim : " << endl;
-	cout << message << endl;
+	time(&currentTime);
+	clientTime=ctime(&currentTime);
+	ret.append("MSG||");
+	ret.append(target);
+	ret.append("||");
+	ret.append(clientTime);//client time
+	ret.append("||");
+	ret.append(msg);
+	ret.append("||");
+	sendToPort(ret);
 }
 
 void createGroup(string str){
 	string groupname;
+	string ret;
 	groupname=str.substr(7);
 	cout << " bikin grup : " << str << endl;
 	//masukkin ke file eksternal 
@@ -188,32 +252,56 @@ void createGroup(string str){
 	myfile << endl;
 	myfile.close();
 	cout << endl << "The group has been created!" << endl;
+	ret.append("CGR||");
+	ret.append(groupname);
+	ret.append("||");
+	sendToPort(ret);
 }
 
 void joinGroup(string str){
 	string groupname;
+	string ret;
 	groupname=str.substr(5);
 	cout << " join grup : " << groupname << endl;
-
+	ret.append("JGR||");
+	ret.append(groupname);
+	ret.append("||");
+	sendToPort(ret);
 }
 
 void leaveGroup(string str){
 	string groupname;
+	string ret;
 	groupname=str.substr(6);
 	cout << " keluar grup : " << groupname << endl;
-
+	ret.append("LGR||");
+	ret.append(groupname);
+	ret.append("||");
+	sendToPort(ret);
 }
 
 void showChat(string str){
 	string destination;
 	destination=str.substr(5);
 	cout << " tampilin chat : " << destination << endl;
+}
 
+void exit(){
+	cout << "THANK YOU!" <<endl;
+}
+
+string sendToPort(string str){
+	//kirim ke port
+	cout << "return : " << str << endl;
+	return str;
 }
 
 int main(){
 	string user;
-	start();
-
+	string path = "user.txt";
+	vector< vector<string> > hasil;
+	// start();
+	hasil = readExt(path);
+	cout << hasil[1][1];
 	return 0;
 }

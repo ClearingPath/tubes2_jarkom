@@ -1,0 +1,3 @@
+namabaru||passbaru
+nama1||pass1
+nama2||pass2

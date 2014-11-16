@@ -297,10 +297,11 @@ string sendToPort(string str){
 }
 
 int main(){
-	string user;
+		
+	// start();
+	//baca file eksternal
 	string path = "user.txt";
 	vector< vector<string> > hasil;
-	// start();
 	hasil = readExt(path);
 	cout << hasil[1][1];
 	return 0;

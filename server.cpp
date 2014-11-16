@@ -1,26 +1,36 @@
 #include "includes.hpp"
 
 //deklarasi fungsi dan prosedur
-void openSocket(int port);
 void recieveConnection();
 void sendMessage();
 void producer();
-void clientHandle(int client_sock,int token);
-void guess();
-bool active(int token);
-void eraseVector(int number);
+void clientHandle(int client_sock,int cid);
+void clientMessageHandle(int client_sock,string message);
+void userLogin(int client_sock,vector<string> & message);
+void userLogout(int client_sock,vector<string> & message);
+void userRegister(int client_sock,vector<string> & message);
+void sendMessage(int client_sock,vector<string> & message);
+void createGroup(int client_sock,vector<string> & message);
+void joinGroup(int client_sock,vector<string> & message);
+void leaveGroup(int client_sock,vector<string> & message);
+void errorReply(int client_sock,string code,string message);
+void successReply(int client_sock);
+bool active(int cid);
+void changeOfflineClient(int cid);
+void stringChopper(string message,vector<string> & result);
 
 //deklarasi global variable
-vector<int> cid;
+vector<clientID> clientOnline;
 vector<int> vtoken;
 int token = 0;
 bool all,producing;
 int sock, client_sock;
 char buffer[1000];
+string stringBuffer;
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 int len, n;
-mutex lock;
+mutex kunci;
 vector<thread> pool;
 
 int main(){
@@ -69,7 +79,7 @@ int main(){
 
 void producer(){
 	while(all){
-		lock.lock(); // ambil lock
+		kunci.lock(); // ambil lock
 		// Jika token masih kurang dari 5
 		if (vtoken.size() < 5)
 		{
@@ -81,7 +91,7 @@ void producer(){
 			producing = false;
 		}
 
-		lock.unlock(); // lepas lock
+		kunci.unlock(); // lepas lock
 		
 		// sleep selama 0 - 999 milisekon (0 - 999000 nanosekon)
 		usleep(50 * 1000);
@@ -95,27 +105,26 @@ void recieveConnection(){
 			clilen = sizeof(cli_addr);
 			client_sock = accept(sock, (struct sockaddr *) &cli_addr, &clilen);
 			printf ("Client %d Connected!\n",client_sock);
-			cid.push_back(vtoken.front());
-			pool.push_back(thread(clientHandle,client_sock,vtoken.front()));
+			pool.push_back(thread(clientHandle,client_sock,1));
 			vtoken.erase(vtoken.begin());
 		}
 		usleep (50 * 1000);
 	}
 }
 
-void clientHandle(int client_sock,int token){
+void clientHandle(int client_sock,int cid){
 	bool act=active(token);
 	while (act){
 		bzero(buffer,1000);
 		len = read(client_sock,buffer,1000);
 		if(len >= 0){
 			printf("Message client %d = %s",client_sock,buffer);
-			if (strcmp(buffer,"close") == 0){
-				eraseVector(token);
+			if (strcmp(buffer,"") == 0){
+				changeOfflineClient(cid);
 			}
-			else if (strcmp(buffer,"") == 0){
-				printf ("SERVER DETECT : CLIENT %d DIED",client_sock);
-				eraseVector(token);
+			else{
+				string temp = buffer;
+				clientMessageHandle(client_sock,temp);
 			}
 			printf("\n");
 		}
@@ -125,29 +134,119 @@ void clientHandle(int client_sock,int token){
 	close(client_sock);
 }
 
+void clientMessageHandle(int client_sock,string message){
+	vector<string> choppedString;
+	stringChopper(message,choppedString);
+	if (choppedString[0].compare("LIN") == 0){
+		userLogin(client_sock,choppedString);
+	}
+	else if (choppedString[0].compare("LOU") == 0){
+		userLogout(client_sock,choppedString);
+	}
+	else if (choppedString[0].compare("REG") == 0){
+		userRegister(client_sock,choppedString);
+	} 
+	else if (choppedString[0].compare("MSG") == 0){
+		sendMessage(client_sock,choppedString);
+	}
+	else if (choppedString[0].compare("CGR") == 0){
+		createGroup(client_sock,choppedString);
+	} 
+	else if (choppedString[0].compare("JGR") == 0){
+		joinGroup(client_sock,choppedString);
+	}
+	else if (choppedString[0].compare("LGR") == 0){
+		leaveGroup(client_sock,choppedString);
+	}
+	else{
+		errorReply(client_sock,"000","Protocol error!");
+	}
+}
 
-bool active(int token){
+void userLogin(int client_sock,vector<string> &  message){
+	//still stub
+	clientID temp;
+	temp.id = 1;
+	temp.user = "sudibya";
+	temp.password = "none";
+	clientOnline.push_back(temp);
+	successReply(client_sock);
+}
+
+void userLogout(int client_sock,vector<string> & message){
+	//still stub
+	successReply(client_sock);
+}
+void userRegister(int client_sock,vector<string> &  message){
+	//still stub
+	successReply(client_sock);
+}
+void sendMessage(int client_sock,vector<string> &  message){
+	//still stub
+	successReply(client_sock);
+}
+void createGroup(int client_sock,vector<string> &  message){
+	//still stub
+	successReply(client_sock);
+}
+void joinGroup(int client_sock,vector<string> &  message){
+	//still stub
+	successReply(client_sock);
+}
+void leaveGroup(int client_sock,vector<string> &  message){
+	//still stub
+	successReply(client_sock);
+}
+void errorReply(int client_sock,string code,string message){
+	stringBuffer = "SVR||";
+	stringBuffer += code;
+	stringBuffer += "||";
+	stringBuffer += message;
+	stringBuffer += "||";
+	bzero(buffer,1000);
+	strcpy(buffer,stringBuffer.c_str());
+	len = write(client_sock,buffer,1000);
+}
+void successReply(int client_sock){
+	stringBuffer = "SVR||200||OK||";
+	bzero(buffer,1000);
+	strcpy(buffer,stringBuffer.c_str());
+	len = write(client_sock,buffer,1000);
+}
+bool active(int cid){
 	bool temp = false;
 	int i = 0;
-	while (i < cid.size()){
-		temp = temp || (cid[i] == token);
+	while (i < clientOnline.size()){
+		temp = temp || (clientOnline[i].id == cid);
 		i++;
 	}
 	return temp;
 }
 
-void eraseVector(int number){
+void changeOfflineClient(int cid){
 	bool found = false;
 	int i = 0;
-	while (!found && (i < cid.size())){
-		if (cid[i] == number){
+	while ((!found) && (i < clientOnline.size())){
+		if (clientOnline[i].id == cid)
 			found = true;
-		}
-		else{
+		else
 			i++;
-		}
 	}
-	if (i != cid.size()){
-		cid.erase(cid.begin()+i);
+	if (i != clientOnline.size()){
+		clientOnline.erase(clientOnline.begin()+i);
+	}
+}
+
+void stringChopper(string message,vector<string> & result){
+	char temp[1000];
+	char * cstr;
+	cstr = new char [100];
+	string stringTemp;
+	strcpy(temp,message.c_str());
+	cstr = strtok(temp,"||");
+	while (cstr != 0){
+		stringTemp = cstr;
+		result.push_back(stringTemp);
+		cstr = strtok(NULL,"||");
 	}
 }

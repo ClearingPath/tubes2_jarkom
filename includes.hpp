@@ -7,6 +7,8 @@
 #include <netdb.h>       // lookup domain/DNS hostname
 #include <errno.h>
 #include <cstring>
+#include <string>
+#include <iostream>
 // thread & mutex
 #include <thread>
 #include <mutex>
@@ -23,10 +25,13 @@
 #include <unistd.h>
 #include <time.h>
 
-using std::queue;
-using std::thread;
-using std::mutex;
-using std::vector;
+using namespace std;
+
+typedef struct {
+	int id;
+	string user;
+	string password;
+}clientID;
 
 #define PORT 25000
 
